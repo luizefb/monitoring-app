@@ -33,7 +33,8 @@ export function RegisterPage() {
             <span className="text-sm font-medium tabular-nums text-muted-foreground">
               {latestRecord.humidity.toFixed(1)}%
             </span>
-            <span className="ml-auto text-[10px] text-muted-foreground/60">sim.</span>
+            <span className="ml-auto text-[10px] text-muted-foreground/60">
+            </span>
           </div>
         </div>
       )}

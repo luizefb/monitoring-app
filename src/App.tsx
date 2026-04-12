@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import { MonitoringProvider } from "@/hooks/useMonitoringData"
 import { Layout } from "@/components/layout/Layout"
 import { DashboardPage } from "@/pages/DashboardPage"
-import { RegisterPage } from "@/pages/RegisterPage"
 
 export default function App() {
   return (
@@ -12,7 +11,7 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<DashboardPage />} />
-            <Route path="registro" element={<RegisterPage />} />
+            <Route path="registro" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
         <Toaster

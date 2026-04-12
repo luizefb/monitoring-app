@@ -1,11 +1,8 @@
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, PlusCircle } from "lucide-react"
+import { LayoutDashboard } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/registro", label: "Registro", icon: PlusCircle },
-]
+const navItems = [{ to: "/", label: "Dashboard", icon: LayoutDashboard }]
 
 export function BottomNav() {
   return (
