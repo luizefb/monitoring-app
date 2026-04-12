@@ -10,16 +10,15 @@ import { useMonitoringData } from "@/hooks/useMonitoringData"
 export function RegisterForm() {
   const { addRecord } = useMonitoringData()
   const [temperature, setTemperature] = useState("")
-  const [humidity, setHumidity] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
 
     const temp = parseFloat(temperature)
-    const hum = parseFloat(humidity)
 
-    if (isNaN(temp) || isNaN(hum)) {
-      toast.error("Preencha ambos os campos corretamente")
+    if (isNaN(temp)) {
+      toast.error("Insira um valor de temperatura válido")
       return
     }
 
@@ -28,15 +27,16 @@ export function RegisterForm() {
       return
     }
 
-    if (hum < 0 || hum > 100) {
-      toast.error("Umidade deve estar entre 0% e 100%")
-      return
+    setIsSaving(true)
+    try {
+      await addRecord(temp)
+      setTemperature("")
+      toast.success("Registro salvo com sucesso!")
+    } catch {
+      toast.error("Erro ao salvar o registro. Tente novamente.")
+    } finally {
+      setIsSaving(false)
     }
-
-    addRecord(temp, hum)
-    setTemperature("")
-    setHumidity("")
-    toast.success("Registro salvo com sucesso!")
   }
 
   return (
@@ -56,27 +56,14 @@ export function RegisterForm() {
               placeholder="Ex: 25.5"
               value={temperature}
               onChange={(e) => setTemperature(e.target.value)}
+              disabled={isSaving}
               required
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="humidity">Umidade (%)</Label>
-            <Input
-              id="humidity"
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              placeholder="Ex: 55.0"
-              value={humidity}
-              onChange={(e) => setHumidity(e.target.value)}
-              required
-            />
-          </div>
-
-          <Button type="submit" size="lg" className="w-full">
+          <Button type="submit" size="lg" className="w-full" disabled={isSaving}>
             <Send className="h-4 w-4" />
-            Registrar
+            {isSaving ? "Salvando..." : "Registrar"}
           </Button>
         </form>
       </CardContent>
