@@ -42,16 +42,12 @@ function loadLocalRecords(): MonitoringRecord[] {
   return mock
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const MonitoringContext = createContext<MonitoringContextType | null>(null)
 
 export function MonitoringProvider({ children }: { children: ReactNode }) {
   const [records, setRecords] = useState<MonitoringRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // ── Inicialização ────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -83,8 +79,8 @@ export function MonitoringProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // ── Realtime subscription ────────────────────────────────────────────────
-
+  
+  // desatualizado - alterar dps
   useEffect(() => {
     if (!isSupabaseConfigured || isLoading) return
 
@@ -100,8 +96,7 @@ export function MonitoringProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoading])
 
-  // ── Adicionar registro ───────────────────────────────────────────────────
-
+  //desatualizado - alterar dps
   const addRecord = useCallback(async (temperature: number) => {
     if (isSupabaseConfigured) {
       const record = await insertRecord(temperature)
@@ -126,8 +121,6 @@ export function MonitoringProvider({ children }: { children: ReactNode }) {
       })
     }
   }, [])
-
-  // ── Derivados ────────────────────────────────────────────────────────────
 
   const latestRecord = records.length > 0 ? records[records.length - 1] : null
   const isTemperatureAlert =

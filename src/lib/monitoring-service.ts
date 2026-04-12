@@ -5,12 +5,6 @@ import type { RealtimeChannel } from "@supabase/supabase-js"
 
 const { table, columns, initialLimit } = DB_CONFIG
 
-/**
- * Gera um valor de umidade simulado (mock) baseado no timestamp do registro.
- * Produz valores entre 45–65% com variação suave e determinística,
- * de forma que o mesmo registro sempre resulte no mesmo valor.
- * Remova quando o sensor de umidade estiver disponível.
- */
 function mockHumidity(timestamp: string): number {
   const ms = new Date(timestamp).getTime()
   const base = 55
@@ -28,7 +22,6 @@ function rowToRecord(row: Record<string, unknown>): MonitoringRecord {
     timestamp,
     temperature: Number(row[columns.temperature]),
     humidity: mockHumidity(timestamp),
-    ...(columns.controller ? { controller: String(row[columns.controller] ?? "") } : {}),
   }
 }
 
@@ -48,7 +41,9 @@ export async function fetchRecords(): Promise<MonitoringRecord[]> {
 }
 
 /** Insere um novo registro manualmente pelo front.
- *  Apenas o campo de temperatura é enviado ao banco — umidade é mock. */
+ *  Apenas o campo de temperatura é enviado ao banco — umidade é mock. 
+ * 
+ * DESATIVADO NO MOMENTO */
 export async function insertRecord(
   temperature: number,
 ): Promise<MonitoringRecord> {

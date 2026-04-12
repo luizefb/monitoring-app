@@ -22,5 +22,7 @@ export interface MonitoringContextType {
   isLive: boolean
 }
 
+/* desatualizado - alterar dps */
+
 export const TEMP_ALERT_THRESHOLD = 32
 export const HUMIDITY_ALERT_THRESHOLD = 70
