@@ -3,88 +3,139 @@ import { DB_CONFIG } from "./db"
 import type { MonitoringRecord } from "@/types"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 
-const { table, columns, initialLimit } = DB_CONFIG
+const { table, humidityTable, columns, initialLimit } = DB_CONFIG
 
-function mockHumidity(timestamp: string): number {
-  const ms = new Date(timestamp).getTime()
-  const base = 55
-  const amplitude = 10
-  const period = 1000 * 60 * 60 * 6 // ciclo de 6 horas
-  const value = base + amplitude * Math.sin((2 * Math.PI * ms) / period)
-  return Math.round(value * 10) / 10
+type DbRow = Record<string, unknown>
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function toMs(value: unknown): number {
+  return new Date(String(value)).getTime()
 }
 
-/** Converte uma linha do banco no tipo interno MonitoringRecord */
-function rowToRecord(row: Record<string, unknown>): MonitoringRecord {
-  const timestamp = String(row[columns.timestamp])
+function rowToRecord(temperatureRow: DbRow, humidityValue: number): MonitoringRecord {
   return {
-    id: String(row[columns.id]),
-    timestamp,
-    temperature: Number(row[columns.temperature]),
-    humidity: mockHumidity(timestamp),
+    id: String(temperatureRow[columns.id]),
+    timestamp: String(temperatureRow[columns.timestamp]),
+    temperature: Number(temperatureRow[columns.temperature]),
+    humidity: humidityValue,
   }
 }
 
-/** Busca os registros mais recentes */
+/** Busca o valor mais recente da tabela HumidityRegister. */
+async function fetchLatestHumidity(): Promise<number> {
+  const { data, error } = await supabase!
+    .from(humidityTable)
+    .select(columns.humidity)
+    .order(columns.timestamp, { ascending: false })
+    .limit(1)
+
+  if (error) throw error
+
+  const value = Number(data?.[0]?.[columns.humidity])
+  if (Number.isNaN(value)) throw new Error("Nenhuma leitura de umidade disponível.")
+  return value
+}
+
+/**
+ * Combina linhas de temperatura com o valor de umidade mais próximo (anterior
+ * ou igual ao timestamp de cada leitura de temperatura).
+ *
+ * Ambos os arrays de entrada devem estar ordenados por timestamp CRESCENTE.
+ */
+function pairRecords(temperatureRows: DbRow[], humidityRows: DbRow[]): MonitoringRecord[] {
+  const sortedTemp = [...temperatureRows].sort((a, b) => toMs(a[columns.timestamp]) - toMs(b[columns.timestamp]))
+  const sortedHum = [...humidityRows].sort((a, b) => toMs(a[columns.timestamp]) - toMs(b[columns.timestamp]))
+
+  let humIdx = 0
+  const records: MonitoringRecord[] = []
+
+  for (const tempRow of sortedTemp) {
+    const tempMs = toMs(tempRow[columns.timestamp])
+
+    while (
+      humIdx + 1 < sortedHum.length &&
+      toMs(sortedHum[humIdx + 1][columns.timestamp]) <= tempMs
+    ) {
+      humIdx += 1
+    }
+
+    const humRow = sortedHum[humIdx]
+    if (!humRow) continue
+
+    const temperature = Number(tempRow[columns.temperature])
+    const humidity = Number(humRow[columns.humidity])
+
+    if (Number.isNaN(temperature) || Number.isNaN(humidity)) continue
+
+    records.push(rowToRecord(tempRow, humidity))
+  }
+
+  return records
+}
+
+// ─── API pública ──────────────────────────────────────────────────────────────
+
+/** Busca os registros mais recentes combinando temperatura e umidade. */
 export async function fetchRecords(): Promise<MonitoringRecord[]> {
   if (!supabase) throw new Error("Supabase não configurado")
 
-  const { data, error } = await supabase
-    .from(table)
-    .select("*")
-    .order(columns.timestamp, { ascending: true })
-    .limit(initialLimit)
+  const [
+    { data: tempData, error: tempError },
+    { data: humData, error: humError },
+  ] = await Promise.all([
+    supabase.from(table).select("*").order(columns.timestamp, { ascending: false }).limit(initialLimit),
+    supabase.from(humidityTable).select("*").order(columns.timestamp, { ascending: false }).limit(initialLimit),
+  ])
+
+  if (tempError) throw tempError
+  if (humError) throw humError
+
+  return pairRecords(tempData ?? [], humData ?? [])
+}
+
+/** Insere um novo registro de temperatura e o retorna com a umidade atual.
+ *
+ *  DESATIVADO NO MOMENTO */
+export async function insertRecord(temperature: number): Promise<MonitoringRecord> {
+  if (!supabase) throw new Error("Supabase não configurado")
+
+  const [latestHumidity, { data, error }] = await Promise.all([
+    fetchLatestHumidity(),
+    supabase
+      .from(table)
+      .insert({ [columns.temperature]: Math.round(temperature * 10) / 10 })
+      .select()
+      .single(),
+  ])
 
   if (error) throw error
 
-  return (data ?? []).map(rowToRecord)
+  return rowToRecord(data, latestHumidity)
 }
 
-/** Insere um novo registro manualmente pelo front.
- *  Apenas o campo de temperatura é enviado ao banco — umidade é mock. 
- * 
- * DESATIVADO NO MOMENTO */
-export async function insertRecord(
-  temperature: number,
-): Promise<MonitoringRecord> {
+/** Cria uma subscription realtime para novos registros de temperatura. */
+export function subscribeToRecords(onInsert: (record: MonitoringRecord) => void): RealtimeChannel {
   if (!supabase) throw new Error("Supabase não configurado")
 
-  const { data, error } = await supabase
-    .from(table)
-    .insert({ [columns.temperature]: Math.round(temperature * 10) / 10 })
-    .select()
-    .single()
+  let latestHumidity = 0
 
-  if (error) throw error
+  void fetchLatestHumidity().then((value) => { latestHumidity = value })
 
-  return rowToRecord(data)
-}
-
-/** Cria uma subscription realtime para novos registros.
- *  Chama onInsert a cada nova linha inserida na tabela. */
-export function subscribeToRecords(
-  onInsert: (record: MonitoringRecord) => void
-): RealtimeChannel {
-  if (!supabase) throw new Error("Supabase não configurado")
-
-  const channel = supabase
+  return supabase
     .channel("monitoring-realtime")
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table },
-      (payload) => {
-        onInsert(rowToRecord(payload.new as Record<string, unknown>))
-      }
-    )
+    .on("postgres_changes", { event: "INSERT", schema: "public", table }, (payload) => {
+      onInsert(rowToRecord(payload.new as DbRow, latestHumidity))
+    })
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: humidityTable }, (payload) => {
+      const newValue = Number((payload.new as DbRow)[columns.humidity])
+      if (!Number.isNaN(newValue)) latestHumidity = newValue
+    })
     .subscribe()
-
-  return channel
 }
 
-/** Remove a subscription realtime */
-export async function unsubscribeFromRecords(
-  channel: RealtimeChannel
-): Promise<void> {
+/** Remove a subscription realtime. */
+export async function unsubscribeFromRecords(channel: RealtimeChannel): Promise<void> {
   if (!supabase) return
   await supabase.removeChannel(channel)
 }

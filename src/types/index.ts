@@ -18,11 +18,11 @@ export interface MonitoringContextType {
   isLoading: boolean
   /** Mensagem de erro, se houver falha de conexão */
   error: string | null
-  /** true quando conectado ao Supabase (false = usando dados mock) */
+  /** true quando conectado ao Supabase */
   isLive: boolean
 }
 
-/* desatualizado - alterar dps */
+/* desatualizado - alterar dps VV*/ 
 
 export const TEMP_ALERT_THRESHOLD = 32
 export const HUMIDITY_ALERT_THRESHOLD = 70

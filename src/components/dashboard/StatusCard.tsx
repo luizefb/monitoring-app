@@ -12,7 +12,6 @@ const config = {
   temperature: {
     label: "Temperatura",
     unit: "°C",
-    isMock: false,
     icon: Thermometer,
     bg: "bg-orange-50",
     alertBg: "bg-red-50",
@@ -24,7 +23,6 @@ const config = {
   humidity: {
     label: "Umidade",
     unit: "%",
-    isMock: true,
     icon: Droplets,
     bg: "bg-cyan-50/60",
     alertBg: "bg-red-50/60",
@@ -55,10 +53,6 @@ export function StatusCard({ type, value, isAlert }: StatusCardProps) {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {c.label}
             </p>
-            {c.isMock && (
-              <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground/50">
-              </span>
-            )}
           </div>
           <div className="flex items-baseline gap-1">
             <motion.span
