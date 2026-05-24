@@ -3,6 +3,7 @@ import { Toaster } from "sonner"
 import { MonitoringProvider } from "@/hooks/useMonitoringData"
 import { Layout } from "@/components/layout/Layout"
 import { DashboardPage } from "@/pages/DashboardPage"
+import { ExplanationPage } from "@/pages/ExplanationPage"
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="registro" element={<Navigate to="/" replace />} />
+            <Route path="sobre" element={<ExplanationPage />} />
           </Route>
         </Routes>
         <Toaster
