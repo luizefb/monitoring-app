@@ -24,5 +24,5 @@ export interface MonitoringContextType {
 
 /* desatualizado - alterar dps VV*/ 
 
-export const TEMP_ALERT_THRESHOLD = 32
-export const HUMIDITY_ALERT_THRESHOLD = 70
+export const TEMP_ALERT_THRESHOLD = 24
+export const HUMIDITY_ALERT_THRESHOLD = 59
