@@ -81,7 +81,7 @@ export function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Médias do mês</CardTitle>
+              <CardTitle>Média de temperatira registrada</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-3">

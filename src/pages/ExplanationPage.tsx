@@ -73,7 +73,7 @@ export function ExplanationPage() {
           </div>
 
           <p>
-            A seção <span className="font-medium text-foreground">Médias do mês</span> mostra a média das medições do mês
+            A seção <span className="font-medium text-foreground">Média de temperatira registrada</span> mostra a média das medições do mês
             atual, ajudando a entender o comportamento geral do ambiente (além do valor “agora”).
           </p>
         </CardContent>
